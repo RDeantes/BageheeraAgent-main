@@ -103,8 +103,19 @@ def update_vigencia(nombre, nueva_fecha):
 
     for tabla in tablas:
         try:
-            res = client.table(tabla).update(payload).ilike("nombre", f"%{texto}%").execute()
-            if getattr(res, "error", None) is None:
+            # intenta buscar por nombre completo primero
+            res = client.table(tabla).select("*").ilike("nombre", f"%{texto}%").limit(1).execute()
+            data = getattr(res, "data", None) or []
+            if data:
+                row_id = data[0].get("id")
+                if row_id is not None:
+                    upd = client.table(tabla).update(payload).eq("id", row_id).execute()
+                    if getattr(upd, "error", None) is None:
+                        return True
+
+            # fallback: actualización por coincidencia parcial de nombre/apellido
+            upd = client.table(tabla).update(payload).ilike("nombre", f"%{texto}%").execute()
+            if getattr(upd, "error", None) is None:
                 return True
         except Exception:
             continue

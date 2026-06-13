@@ -151,7 +151,19 @@ def contrato_desde_excel(datos, generar_contrato_func, personalidad_func):
     if persona is None:
         return personalidad_func("❌ No encontré al empleado")
 
-    nombre_persona = persona.get("NOMBRE") or persona.get("nombre") or datos.get("nombre", "")
+    nombre_persona = (
+        _valor_persona(persona, "nombre_completo", "NOMBRE_COMPLETO", "nombre completo")
+        or " ".join(
+            parte for parte in [
+                _valor_persona(persona, "nombre", "NOMBRE"),
+                _valor_persona(persona, "apellido_paterno", "APELLIDO_PATERNO"),
+                _valor_persona(persona, "apellido_materno", "APELLIDO_MATERNO"),
+            ] if parte
+        )
+        or datos.get("nombre", "")
+        or _valor_persona(persona, "nombre", "NOMBRE")
+        or ""
+    )
 
     datos_finales = {
         "tipo": datos.get("tipo", ""),
