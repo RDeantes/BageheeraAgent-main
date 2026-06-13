@@ -177,7 +177,7 @@ def contrato_desde_excel(datos, generar_contrato_func, personalidad_func):
         "curp": _valor_persona(persona, "CURP", "curp"),
         "domicilio": _valor_persona(persona, "direccion", "DOMICILIO", "domicilio"),
         "puesto": _valor_persona(persona, "puesto_id", "PUESTO", "puesto"),
-        "dias": "LUNES A SABADO"
+        "dias": datos.get("dias", "LUNES A SABADO")
     }
 
     pdf = generar_contrato_func(datos_finales)

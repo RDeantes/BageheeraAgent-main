@@ -97,21 +97,24 @@ def flujo_contrato(mensaje):
     if "tipo" not in estado_contrato:
         if "temporal" in mensaje:
             estado_contrato["tipo"] = "TEMPORAL"
-        elif "permanente" in mensaje:
-            estado_contrato["tipo"] = "PERMANENTE"
+        elif "permanente" in mensaje or "indeterminado" in mensaje:
+            estado_contrato["tipo"] = "INDETERMINADO"
         else:
             return personalidad_bagheera("Responde: temporal o permanente")
-
         return personalidad_bagheera("¿Jornada completa o parcial?")
 
     elif "jornada" not in estado_contrato:
         if "completa" in mensaje:
             estado_contrato["jornada"] = "COMPLETA"
+            return personalidad_bagheera("Duración del contrato:")
         elif "parcial" in mensaje:
             estado_contrato["jornada"] = "PARCIAL"
+            return personalidad_bagheera("¿Qué días trabajará? (ej: LUNES, MIERCOLES Y VIERNES):")
         else:
             return personalidad_bagheera("Responde: completa o parcial")
 
+    elif estado_contrato.get("jornada") == "PARCIAL" and "dias" not in estado_contrato:
+        estado_contrato["dias"] = mensaje.upper()
         return personalidad_bagheera("Duración del contrato:")
 
     elif "duracion" not in estado_contrato:
@@ -144,10 +147,24 @@ def flujo_renovacion(mensaje):
     if "tipo" not in estado_renovacion:
         if "temporal" in mensaje:
             estado_renovacion["tipo"] = "TEMPORAL"
-        elif "permanente" in mensaje:
-            estado_renovacion["tipo"] = "PERMANENTE"
+        elif "permanente" in mensaje or "indeterminado" in mensaje:
+            estado_renovacion["tipo"] = "INDETERMINADO"
         else:
             return personalidad_bagheera("Responde: temporal o permanente")
+        return personalidad_bagheera("¿Jornada completa o parcial?")
+
+    if "jornada" not in estado_renovacion:
+        if "completa" in mensaje:
+            estado_renovacion["jornada"] = "COMPLETA"
+            return personalidad_bagheera("Duración del contrato:")
+        elif "parcial" in mensaje:
+            estado_renovacion["jornada"] = "PARCIAL"
+            return personalidad_bagheera("¿Qué días trabajará? (ej: LUNES, MIERCOLES Y VIERNES):")
+        else:
+            return personalidad_bagheera("Responde: completa o parcial")
+
+    if estado_renovacion.get("jornada") == "PARCIAL" and "dias" not in estado_renovacion:
+        estado_renovacion["dias"] = mensaje.upper()
         return personalidad_bagheera("Duración del contrato:")
 
     if "duracion" not in estado_renovacion:
@@ -163,7 +180,8 @@ def flujo_renovacion(mensaje):
         datos = {
             "nombre": estado_renovacion["nombre"],
             "tipo": estado_renovacion["tipo"],
-            "jornada": "COMPLETA",
+            "jornada": estado_renovacion["jornada"],
+            "dias": estado_renovacion.get("dias", "LUNES A SABADO"),
             "duracion": estado_renovacion["duracion"],
             "fecha_inicio": estado_renovacion["fecha_inicio"],
             "fecha_termino": estado_renovacion["fecha_termino"],
@@ -264,10 +282,24 @@ def _reemplazar_placeholders_en_parrafos(elemento, datos):
                 _reemplazar_placeholders_en_parrafos(celda, datos)
 
 
+def _seleccionar_plantilla(datos):
+    tipo = str(datos.get("tipo", "")).upper()
+    jornada = str(datos.get("jornada", "")).upper()
+
+    if "INDETERMINADO" in tipo or "PERMANENTE" in tipo:
+        if "PARCIAL" in jornada:
+            return "CONTRATO FORMATO TIEMPO INDETERMINADO Y PARCIAL.docx"
+        return "CONTRATO FORMATO TIEMPO INDETERMINADO.docx"
+    else:
+        if "PARCIAL" in jornada:
+            return "CONTRATO FORMATO TEMPORAL Y PARCIAL.docx"
+        return "CONTRATO FORMATO TEMPORAL.docx"
+
+
 def generar_contrato(datos):
     base_path = os.path.dirname(__file__)
 
-    plantilla = os.path.join(base_path, "CONTRATO FORMATO TEMPORAL.docx")
+    plantilla = os.path.join(base_path, _seleccionar_plantilla(datos))
 
     doc = Document(plantilla)
 
