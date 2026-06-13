@@ -1,6 +1,7 @@
 import unicodedata
 from datetime import datetime
 from google_sheets import get_sheet
+from supabase_client import fetch_empleado as fetch_supabase_empleado
 
 
 # =========================================================
@@ -16,8 +17,12 @@ def limpiar(texto):
 # BUSCAR EMPLEADO (MATCH SEGURO)
 # =========================================================
 def buscar_empleado(nombre):
-    sheet = get_sheet()
-    registros = sheet.get_all_records()
+    try:
+        sheet = get_sheet()
+        registros = sheet.get_all_records()
+    except Exception:
+        empleado = fetch_supabase_empleado(nombre)
+        return empleado
 
     nombre_limpio = limpiar(nombre)
     palabras_input = nombre_limpio.split()
@@ -50,8 +55,12 @@ def buscar_empleado(nombre):
 # ACTUALIZAR VIGENCIA
 # =========================================================
 def actualizar_vigencia(nombre, nueva_fecha):
-    sheet = get_sheet()
-    registros = sheet.get_all_records()
+    try:
+        sheet = get_sheet()
+        registros = sheet.get_all_records()
+    except Exception:
+        print("⚠️ No se actualizó la vigencia porque GOOGLE_CREDS no está disponible en Railway")
+        return False
 
     for i, row in enumerate(registros):
         if limpiar(row.get("NOMBRE", "")) == limpiar(nombre):

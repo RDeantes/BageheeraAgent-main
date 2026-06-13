@@ -4,6 +4,8 @@ import sys
 import os
 import asyncio
 import threading
+import atexit
+import tempfile
 
 from BagheeraBrain import procesar
 from vigencias import listar_vencidos
@@ -15,6 +17,26 @@ print("HOLA JEFA COMO PUEDO AYUDARTE HOY")
 # 🔑 TOKEN DEL BOT (puedes definirlo en Railway/Render como TELEGRAM_TOKEN)
 TOKEN = os.getenv("TELEGRAM_TOKEN", "8614896779:AAGUawkf0Vh29uAzBHBGSirlDLhxzINRmMg")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
+LOCK_FILE = os.path.join(tempfile.gettempdir(), "bageheera_bot.lock")
+
+
+def acquire_singleton_lock():
+    try:
+        fd = os.open(LOCK_FILE, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        with os.fdopen(fd, "w") as f:
+            f.write(str(os.getpid()))
+        atexit.register(lambda: _release_singleton_lock())
+        return True
+    except FileExistsError:
+        return False
+
+
+def _release_singleton_lock():
+    try:
+        if os.path.exists(LOCK_FILE):
+            os.remove(LOCK_FILE)
+    except Exception:
+        pass
 
 
 # =========================================================
@@ -88,6 +110,10 @@ async def revisar_vigencias_diarias(app):
 
 
 if __name__ == "__main__":
+    if not acquire_singleton_lock():
+        print("⚠️ Otra instancia del bot ya está ejecutándose; saliendo...")
+        sys.exit(0)
+
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, responder))
@@ -104,4 +130,4 @@ if __name__ == "__main__":
     )
     thread.start()
 
-    app.run_polling()
+    app.run_polling(drop_pending_updates=True)

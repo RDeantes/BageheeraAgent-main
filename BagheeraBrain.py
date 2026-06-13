@@ -296,8 +296,11 @@ def revisar_vacaciones_por_mes(mensaje):
     if not mes_detectado:
         return personalidad_bagheera("❌ Mes no válido")
 
-    sheet = get_sheet()
-    registros = sheet.get_all_records()
+    try:
+        sheet = get_sheet()
+        registros = sheet.get_all_records()
+    except Exception as exc:
+        return personalidad_bagheera(f"⚠️ No se puede consultar Google Sheets ahora: {exc}")
 
     resultado = []
 
