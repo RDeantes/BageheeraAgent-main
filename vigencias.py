@@ -4,6 +4,16 @@ from google_sheets import get_sheet
 from supabase_client import fetch_vencidos as fetch_supabase_vencidos
 
 
+def _is_inactive_status(row):
+    for key in ("status", "estado", "estado_contrato", "situacion", "situacion_contrato"):
+        value = str(row.get(key) or "").strip().lower()
+        if value in ("inactivo", "inactive", "desactivado", "no activo", "no_activo", "baja"):
+            return True
+        if value.startswith("inact"):
+            return True
+    return False
+
+
 def listar_vencidos():
     supabase_vencidos = fetch_supabase_vencidos()
     if supabase_vencidos:
@@ -18,7 +28,10 @@ def listar_vencidos():
     vencidos = []
 
     for row in registros:
-        vigencia_raw = row.get("VIGENCIA") or row.get("vigencia") or row.get("FECHA_FIN") or row.get("fecha_termino")
+        if _is_inactive_status(row):
+            continue
+
+        vigencia_raw = row.get("vigencia") or row.get("VIGENCIA") or row.get("fecha_termino") or row.get("FECHA_FIN")
         texto = str(vigencia_raw).strip()
         if not texto:
             continue
