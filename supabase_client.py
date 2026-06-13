@@ -55,7 +55,7 @@ def fetch_vencidos():
             data = getattr(res, "data", None) or []
             vencidos = []
             for row in data:
-                fecha = _normalize_date(row.get("vigencia") or row.get("fecha_termino") or row.get("fecha_fin"))
+                fecha = _normalize_date(row.get("fecha_vigencia") or row.get("vigencia") or row.get("fecha_termino") or row.get("fecha_fin"))
                 if fecha and fecha < hoy:
                     vencidos.append({
                         "nombre": row.get("nombre") or row.get("NOMBRE") or "",
