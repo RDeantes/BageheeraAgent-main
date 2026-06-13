@@ -93,31 +93,37 @@ def update_vigencia(nombre, nueva_fecha):
     if not texto or not nueva_fecha:
         return False
 
+    fecha_str = str(nueva_fecha)
     tablas = [os.getenv("SUPABASE_TABLE", "empleados"), os.getenv("SUPABASE_CONTRATOS_TABLE", "contratos")]
-    payload = {
-        "vigencia": str(nueva_fecha),
-        "fecha_vigencia": str(nueva_fecha),
-        "fecha_termino": str(nueva_fecha),
-        "fecha_fin": str(nueva_fecha),
-    }
+    columnas = ["fecha_vigencia", "vigencia", "fecha_termino", "fecha_fin"]
 
     for tabla in tablas:
         try:
-            # intenta buscar por nombre completo primero
             res = client.table(tabla).select("*").ilike("nombre", f"%{texto}%").limit(1).execute()
             data = getattr(res, "data", None) or []
-            if data:
-                row_id = data[0].get("id")
-                if row_id is not None:
-                    upd = client.table(tabla).update(payload).eq("id", row_id).execute()
-                    if getattr(upd, "error", None) is None:
-                        return True
+            if not data:
+                continue
 
-            # fallback: actualización por coincidencia parcial de nombre/apellido
-            upd = client.table(tabla).update(payload).ilike("nombre", f"%{texto}%").execute()
+            row = data[0]
+            row_id = row.get("id")
+
+            # detectar qué columnas de fecha existen en la fila
+            cols_existentes = [c for c in columnas if c in row]
+            if not cols_existentes:
+                cols_existentes = ["fecha_vigencia"]
+
+            payload = {c: fecha_str for c in cols_existentes}
+
+            if row_id is not None:
+                upd = client.table(tabla).update(payload).eq("id", row_id).execute()
+            else:
+                upd = client.table(tabla).update(payload).ilike("nombre", f"%{texto}%").execute()
+
             if getattr(upd, "error", None) is None:
+                print(f"✅ fecha_vigencia actualizada en '{tabla}' para {texto}: {fecha_str}")
                 return True
-        except Exception:
+        except Exception as e:
+            print(f"⚠️ Error actualizando vigencia en '{tabla}': {e}")
             continue
 
     return False
