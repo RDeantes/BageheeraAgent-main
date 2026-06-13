@@ -121,8 +121,9 @@ def update_vigencia(nombre, nueva_fecha):
                 continue
 
             row = data[0]
-            row_id = row.get("id")
-            print(f"✅ [update_vigencia] Empleado encontrado en '{nombre_tabla}': id={row_id}, columnas={list(row.keys())}")
+            row_id = row.get("id") or row.get("id_empleado") or row.get("id_contrato")
+            pk_col = "id" if row.get("id") is not None else ("id_empleado" if row.get("id_empleado") is not None else "id_contrato")
+            print(f"✅ [update_vigencia] Empleado encontrado en '{nombre_tabla}': {pk_col}={row_id}, columnas={list(row.keys())}")
 
             # construir payload solo con columnas que existen en la fila
             columnas_candidatas = ["fecha_vigencia", "vigencia", "fecha_termino", "fecha_fin"]
@@ -136,7 +137,7 @@ def update_vigencia(nombre, nueva_fecha):
             print(f"📝 [update_vigencia] Payload: {payload}")
 
             if row_id is not None:
-                upd = client.table(nombre_tabla).update(payload).eq("id", row_id).execute()
+                upd = client.table(nombre_tabla).update(payload).eq(pk_col, row_id).execute()
             else:
                 upd = client.table(nombre_tabla).update(payload).ilike("nombre", f"%{texto}%").execute()
 
