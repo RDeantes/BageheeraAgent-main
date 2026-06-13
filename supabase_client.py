@@ -84,6 +84,34 @@ def fetch_vencidos():
     return []
 
 
+def update_vigencia(nombre, nueva_fecha):
+    client = get_supabase_client()
+    if not client:
+        return False
+
+    texto = str(nombre).strip()
+    if not texto or not nueva_fecha:
+        return False
+
+    tablas = [os.getenv("SUPABASE_TABLE", "empleados"), os.getenv("SUPABASE_CONTRATOS_TABLE", "contratos")]
+    payload = {
+        "vigencia": str(nueva_fecha),
+        "fecha_vigencia": str(nueva_fecha),
+        "fecha_termino": str(nueva_fecha),
+        "fecha_fin": str(nueva_fecha),
+    }
+
+    for tabla in tablas:
+        try:
+            res = client.table(tabla).update(payload).ilike("nombre", f"%{texto}%").execute()
+            if getattr(res, "error", None) is None:
+                return True
+        except Exception:
+            continue
+
+    return False
+
+
 def fetch_empleado(nombre):
     client = get_supabase_client()
     if not client:

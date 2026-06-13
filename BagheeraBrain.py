@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 from datetime import datetime
 from docx import Document
@@ -259,18 +260,33 @@ def generar_contrato(datos):
             if f"{{{{{k}}}}}" in p.text:
                 p.text = p.text.replace(f"{{{{{k}}}}}", str(v))
 
-    ruta_docx = os.path.join(base_path, f"{datos['nombre']}.docx")
+    nombre_sanitizado = "CONTRATO" if not datos.get("nombre") else str(datos.get("nombre")).strip()
+    nombre_sanitizado = "".join(ch if ch.isalnum() or ch in " _-." else "_" for ch in nombre_sanitizado)
+    nombre_sanitizado = nombre_sanitizado.strip() or "CONTRATO"
+
+    ruta_docx = os.path.join(base_path, f"{nombre_sanitizado}.docx")
     doc.save(ruta_docx)
 
     ruta_pdf = ruta_docx.replace(".docx", ".pdf")
 
-    subprocess.run([
-        "soffice",
-        "--headless",
-        "--convert-to", "pdf",
-        "--outdir", base_path,
-        ruta_docx
-    ])
+    try:
+        if shutil.which("soffice"):
+            subprocess.run([
+                "soffice",
+                "--headless",
+                "--convert-to", "pdf",
+                "--outdir", base_path,
+                ruta_docx
+            ], check=True)
+        else:
+            from docx2pdf import convert
+            convert(ruta_docx, ruta_pdf)
+    except Exception:
+        if not os.path.exists(ruta_pdf):
+            return ruta_docx
+
+    if not os.path.exists(ruta_pdf) and os.path.exists(ruta_docx):
+        return ruta_docx
 
     return ruta_pdf
 

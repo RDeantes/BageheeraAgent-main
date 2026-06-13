@@ -1,7 +1,7 @@
 import unicodedata
 from datetime import datetime
 from google_sheets import get_sheet
-from supabase_client import fetch_empleado as fetch_supabase_empleado
+from supabase_client import fetch_empleado as fetch_supabase_empleado, update_vigencia as update_supabase_vigencia
 
 
 # =========================================================
@@ -29,7 +29,8 @@ def buscar_empleado(nombre):
 
     # EXACTO
     for row in registros:
-        if limpiar(row.get("NOMBRE", "")) == nombre_limpio:
+        nombre_row = row.get("NOMBRE") or row.get("nombre") or ""
+        if limpiar(nombre_row) == nombre_limpio:
             return row
 
     # POR COINCIDENCIAS (mínimo 2 palabras)
@@ -37,7 +38,8 @@ def buscar_empleado(nombre):
     mejor_score = 0
 
     for row in registros:
-        palabras_excel = limpiar(row.get("NOMBRE", "")).split()
+        nombre_row = row.get("NOMBRE") or row.get("nombre") or ""
+        palabras_excel = limpiar(nombre_row).split()
 
         score = sum(1 for p in palabras_input if p in palabras_excel)
 
@@ -123,23 +125,30 @@ def contrato_desde_excel(datos, generar_contrato_func, personalidad_func):
     if persona is None:
         return personalidad_func("❌ No encontré al empleado")
 
+    nombre_persona = persona.get("NOMBRE") or persona.get("nombre") or datos.get("nombre", "")
+
     datos_finales = {
         "tipo": datos.get("tipo", ""),
         "jornada": datos.get("jornada", ""),
-        "duracion": datos.get("duracion", ""),  # 🔥 YA RESPETA INPUT
+        "duracion": datos.get("duracion", ""),
         "fecha_inicio": datos.get("fecha_inicio", ""),
         "fecha_termino": datos.get("fecha_termino", ""),
-        "nombre": persona.get("NOMBRE", ""),
-        "nacionalidad": persona.get("NACIONALIDAD", ""),
-        "sexo": persona.get("SEXO", ""),
-        "curp": persona.get("CURP", ""),
-        "domicilio": persona.get("DOMICILIO", ""),
-        "puesto": persona.get("PUESTO", ""),
+        "nombre": nombre_persona,
+        "nacionalidad": persona.get("NACIONALIDAD") or persona.get("nacionalidad", ""),
+        "sexo": persona.get("SEXO") or persona.get("sexo", ""),
+        "curp": persona.get("CURP") or persona.get("curp", ""),
+        "domicilio": persona.get("DOMICILIO") or persona.get("domicilio", ""),
+        "puesto": persona.get("PUESTO") or persona.get("puesto", ""),
         "dias": "LUNES A SABADO"
     }
 
     pdf = generar_contrato_func(datos_finales)
 
-    actualizar_vigencia(persona.get("NOMBRE", ""), datos_finales["fecha_termino"])
+    try:
+        actualizar_vigencia(nombre_persona, datos_finales["fecha_termino"])
+    except Exception:
+        pass
+
+    update_supabase_vigencia(nombre_persona, datos_finales["fecha_termino"])
 
     return pdf
