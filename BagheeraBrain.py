@@ -248,6 +248,22 @@ def flujo_agregar_empleado(mensaje):
 # =========================================================
 # 📄 GENERAR CONTRATO
 # =========================================================
+def _reemplazar_placeholders_en_parrafos(elemento, datos):
+    for p in elemento.paragraphs:
+        if not p.text:
+            continue
+        texto = p.text
+        for k, v in datos.items():
+            texto = texto.replace(f"{{{{{k}}}}}", str(v))
+        if texto != p.text:
+            p.text = texto
+
+    for tabla in elemento.tables:
+        for fila in tabla.rows:
+            for celda in fila.cells:
+                _reemplazar_placeholders_en_parrafos(celda, datos)
+
+
 def generar_contrato(datos):
     base_path = os.path.dirname(__file__)
 
@@ -255,10 +271,7 @@ def generar_contrato(datos):
 
     doc = Document(plantilla)
 
-    for p in doc.paragraphs:
-        for k, v in datos.items():
-            if f"{{{{{k}}}}}" in p.text:
-                p.text = p.text.replace(f"{{{{{k}}}}}", str(v))
+    _reemplazar_placeholders_en_parrafos(doc, datos)
 
     nombre_sanitizado = "CONTRATO" if not datos.get("nombre") else str(datos.get("nombre")).strip()
     nombre_sanitizado = "".join(ch if ch.isalnum() or ch in " _-." else "_" for ch in nombre_sanitizado)

@@ -118,6 +118,32 @@ def agregar_empleado(data):
 # =========================================================
 # CONTRATO DESDE SHEETS (FIX COMPLETO)
 # =========================================================
+PUESTOS_MAP = {
+    1: "AUXILIAR GENERAL",
+    2: "AUXILIAR MARKETING",
+    3: "AUXILIAR OP",
+    4: "AYUDANTE DE COCINA",
+    5: "CAJERO",
+    6: "CAPITAN DE MESEROS",
+    7: "COCINERO",
+    8: "GERENTE GENERAL",
+    9: "MESERO",
+    10: "REPARTIDOR",
+    11: "RUNNER",
+    12: "VENDEDOR",
+}
+
+
+def _valor_persona(persona, *claves):
+    for clave in claves:
+        valor = persona.get(clave)
+        if valor not in (None, ""):
+            if clave == "puesto_id" and isinstance(valor, (int, float)):
+                return PUESTOS_MAP.get(int(valor), str(valor))
+            return valor
+    return ""
+
+
 def contrato_desde_excel(datos, generar_contrato_func, personalidad_func):
 
     persona = buscar_empleado(datos["nombre"])
@@ -134,11 +160,11 @@ def contrato_desde_excel(datos, generar_contrato_func, personalidad_func):
         "fecha_inicio": datos.get("fecha_inicio", ""),
         "fecha_termino": datos.get("fecha_termino", ""),
         "nombre": nombre_persona,
-        "nacionalidad": persona.get("NACIONALIDAD") or persona.get("nacionalidad", ""),
-        "sexo": persona.get("SEXO") or persona.get("sexo", ""),
-        "curp": persona.get("CURP") or persona.get("curp", ""),
-        "domicilio": persona.get("DOMICILIO") or persona.get("domicilio", ""),
-        "puesto": persona.get("PUESTO") or persona.get("puesto", ""),
+        "nacionalidad": _valor_persona(persona, "NACIONALIDAD", "nacionalidad"),
+        "sexo": _valor_persona(persona, "SEXO", "sexo"),
+        "curp": _valor_persona(persona, "CURP", "curp"),
+        "domicilio": _valor_persona(persona, "direccion", "DOMICILIO", "domicilio"),
+        "puesto": _valor_persona(persona, "puesto_id", "PUESTO", "puesto"),
         "dias": "LUNES A SABADO"
     }
 
