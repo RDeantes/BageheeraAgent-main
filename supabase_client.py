@@ -41,15 +41,6 @@ def _normalize_date(value):
     return None
 
 
-def _is_inactive_status(row):
-    for key in ("status", "estado", "estado_contrato", "situacion", "situacion_contrato"):
-        value = str(row.get(key) or "").strip().lower()
-        if value in ("inactivo", "inactive", "desactivado", "no activo", "no_activo", "baja"):
-            return True
-        if value.startswith("inact"):
-            return True
-    return False
-
 
 def fetch_vencidos():
     client = get_supabase_client()
@@ -61,14 +52,14 @@ def fetch_vencidos():
 
     for tabla in tablas:
         try:
-            res = client.table(tabla).select("*").execute()
+            res = client.table(tabla).select("*").eq("activo", True).execute()
             data = getattr(res, "data", None) or []
             vencidos = []
             for row in data:
-                if _is_inactive_status(row):
-                    continue
-
-                fecha = _normalize_date(row.get("vigencia") or row.get("fecha_vigencia") or row.get("fecha_termino") or row.get("fecha_fin"))
+                fecha = _normalize_date(
+                    row.get("fecha_vigencia") or row.get("vigencia")
+                    or row.get("fecha_termino") or row.get("fecha_fin")
+                )
                 if fecha and fecha < hoy:
                     vencidos.append({
                         "nombre": row.get("nombre") or row.get("NOMBRE") or "",
